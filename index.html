@@ -86,13 +86,13 @@
     <h1>Calculadora de Umbral de Producción</h1>
     <p><b>Ingrese los siguientes datos:</b></p>
 
-    <label for="cf">Costo fijo (USD):</label>
+    <label for="cf">Costo fijo:</label>
     <input type="number" id="cf" placeholder="Ejemplo: 15000">
 
-    <label for="cv">Costo variable por unidad (USD):</label>
+    <label for="cv">Costo variable unitario:</label>
     <input type="number" id="cv" placeholder="Ejemplo: 2.00">
 
-    <label for="ce">Costo de compra externa por unidad (USD):</label>
+    <label for="ce">Costo de compra unitario:</label>
     <input type="number" id="ce" placeholder="Ejemplo: 4.50">
 
     <label for="q">Demanda estimada (unidades):</label>
@@ -212,7 +212,7 @@
           responsive: true,
           scales: {
             x: { title: { display: true, text: 'Cantidad de unidades' } },
-            y: { title: { display: true, text: 'Costo total (USD)' } }
+            y: { title: { display: true, text: 'Unidades monetarias' } }
           }
         }
       });
