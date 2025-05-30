@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Calculadora de Umbral de Producción</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f4f4f4;
+      position: relative;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    input[type=number] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0055aa;
+    }
+
+    .resultado {
+      margin-top: 20px;
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+
+    .creditos {
+      margin-top: 30px;
+      font-size: 0.9em;
+      color: #555;
+    }
+
+    .ayuda-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 1.2em;
+      cursor: pointer;
+    }
+
+    .ayuda-popup {
+      display: none;
+      position: fixed;
+      top: 70px;
+      right: 20px;
+      background-color: white;
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 8px;
+      width: 300px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Calculadora de Umbral de Producción</h1>
+    <p><b>Ingrese los siguientes datos:</b></p>
+
+    <label for="cf">Costo fijo (USD):</label>
+    <input type="number" id="cf" placeholder="Ejemplo: 15000">
+
+    <label for="cv">Costo variable por unidad (USD):</label>
+    <input type="number" id="cv" placeholder="Ejemplo: 2.00">
+
+    <label for="ce">Costo de compra externa por unidad (USD):</label>
+    <input type="number" id="ce" placeholder="Ejemplo: 4.50">
+
+    <label for="q">Demanda estimada (unidades):</label>
+    <input type="number" id="q" placeholder="Ejemplo: 8000">
+
+    <button onclick="calcularUmbral()">Calcular</button>
+
+    <div class="resultado" id="resultado"></div>
+
+    <canvas id="grafico" width="600" height="300"></canvas>
+
+    <div class="creditos">
+      Universidad Paraguayo Alemana<br>
+      Autores: José Noguera Reyes, Maximiliano Coronel Guglielmone
+    </div>
+  </div>
+
+  <!-- Botón de ayuda -->
+  <button class="ayuda-btn" onclick="toggleAyuda()">?</button>
+
+  <!-- Popup de ayuda -->
+  <div class="ayuda-popup" id="ayudaPopup">
+    <h3>¿Qué es el Umbral de Producción?</h3>
+    <p>El umbral de producción (UP) es la cantidad mínima de unidades donde los costos de producir internamente igualan a los costos de comprar externamente.</p>
+    <p><strong>Fórmula:</strong><br> UP = Costo fijo / (Costo compra - Costo variable)</p>
+    <p>Si la demanda real es mayor al umbral, conviene producir. Si es menor, conviene comprar.</p>
+  </div>
+
+  <script>
+    let chart;
+
+    function calcularUmbral() {
+      const cf = parseFloat(document.getElementById('cf').value);
+      const cv = parseFloat(document.getElementById('cv').value);
+      const ce = parseFloat(document.getElementById('ce').value);
+      const q = parseFloat(document.getElementById('q').value);
+      const resultado = document.getElementById('resultado');
+
+      if (isNaN(cf) || isNaN(cv) || isNaN(ce) || isNaN(q)) {
+        resultado.textContent = "Por favor, complete todos los campos con números válidos.";
+        return;
+      }
+
+      if ((ce - cv) === 0 && cf === 0) {
+        resultado.innerHTML = "Ambos métodos tienen el mismo costo en todos los niveles de producción. → <strong>Indiferente</strong>.";
+        actualizarGrafico(null);
+        return;
+      }
+
+      if ((ce - cv) === 0 && cf > 0) {
+        resultado.innerHTML = "El costo por unidad es igual, pero producir implica un costo fijo adicional. → <strong>Conviene comprar</strong>.";
+        actualizarGrafico(null);
+        return;
+      }
+
+      const umbral = cf / (ce - cv);
+
+      let recomendacion = '';
+      if (q > umbral) {
+        recomendacion = "→ Recomendación: <strong>CONVIENE PRODUCIR</strong> internamente.";
+      } else if (q < umbral) {
+        recomendacion = "→ Recomendación: <strong>CONVIENE COMPRAR</strong> externamente.";
+      } else {
+        recomendacion = "→ Ambos métodos tienen el mismo costo. <strong>Indiferente</strong>.";
+      }
+
+      resultado.innerHTML = `Umbral de producción: <strong>${umbral.toFixed(2)}</strong> unidades.<br>${recomendacion}`;
+      actualizarGrafico(umbral);
+    }
+
+    function actualizarGrafico(umbral) {
+      const ctx = document.getElementById('grafico').getContext('2d');
+
+      const labels = [];
+      const costoProduccion = [];
+      const costoCompra = [];
+
+      for (let i = 0; i <= 20; i++) {
+        const unidades = i * 500;
+        labels.push(unidades);
+
+        const cf = parseFloat(document.getElementById('cf').value) || 0;
+        const cv = parseFloat(document.getElementById('cv').value) || 0;
+        const ce = parseFloat(document.getElementById('ce').value) || 0;
+
+        costoProduccion.push(cf + cv * unidades);
+        costoCompra.push(ce * unidades);
+      }
+
+      if (chart) {
+        chart.destroy();
+      }
+
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Costo de Producción',
+              data: costoProduccion,
+              borderColor: 'green',
+              fill: false
+            },
+            {
+              label: 'Costo de Compra',
+              data: costoCompra,
+              borderColor: 'blue',
+              fill: false
+            }
+          ]
+        },
+        options: {
+          plugins: {
+            legend: { position: 'top' }
+          },
+          responsive: true,
+          scales: {
+            x: { title: { display: true, text: 'Cantidad de unidades' } },
+            y: { title: { display: true, text: 'Costo total (USD)' } }
+          }
+        }
+      });
+    }
+
+    function toggleAyuda() {
+      const ayudaPopup = document.getElementById('ayudaPopup');
+      ayudaPopup.style.display = ayudaPopup.style.display === 'block' ? 'none' : 'block';
+    }
+  </script>
+</body>
+</html>
