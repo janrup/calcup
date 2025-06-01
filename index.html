@@ -92,8 +92,8 @@
     <label for="cv">Costo variable unitario:</label>
     <input type="number" id="cv" placeholder="Ejemplo: 2.00">
 
-    <label for="ce">Costo de compra unitario:</label>
-    <input type="number" id="ce" placeholder="Ejemplo: 4.50">
+    <label for="cc">Costo de compra unitario:</label>
+    <input type="number" id="cc" placeholder="Ejemplo: 4.50">
 
     <label for="q">Demanda estimada (unidades):</label>
     <input type="number" id="q" placeholder="Ejemplo: 8000">
@@ -127,28 +127,28 @@
     function calcularUmbral() {
       const cf = parseFloat(document.getElementById('cf').value);
       const cv = parseFloat(document.getElementById('cv').value);
-      const ce = parseFloat(document.getElementById('ce').value);
+      const cc = parseFloat(document.getElementById('cc').value);
       const q = parseFloat(document.getElementById('q').value);
       const resultado = document.getElementById('resultado');
 
-      if (isNaN(cf) || isNaN(cv) || isNaN(ce) || isNaN(q)) {
+      if (isNaN(cf) || isNaN(cv) || isNaN(cc) || isNaN(q)) {
         resultado.textContent = "Por favor, complete todos los campos con números válidos.";
         return;
       }
 
-      if ((ce - cv) === 0 && cf === 0) {
+      if ((cc - cv) === 0 && cf === 0) {
         resultado.innerHTML = "Ambos métodos tienen el mismo costo en todos los niveles de producción. → <strong>Indiferente</strong>.";
         actualizarGrafico(null);
         return;
       }
 
-      if ((ce - cv) === 0 && cf > 0) {
+      if ((cc - cv) === 0 && cf > 0) {
         resultado.innerHTML = "El costo por unidad es igual, pero producir implica un costo fijo adicional. → <strong>Conviene comprar</strong>.";
         actualizarGrafico(null);
         return;
       }
 
-      const umbral = cf / (ce - cv);
+      const umbral = cf / (cc - cv);
 
       let recomendacion = '';
       if (q > umbral) {
@@ -164,23 +164,30 @@
     }
 
     function actualizarGrafico(umbral) {
-      const ctx = document.getElementById('grafico').getContext('2d');
+      const cf = parseFloat(document.getElementById('cf').value) || 0;
+      const cv = parseFloat(document.getElementById('cv').value) || 0;
+      const cc = parseFloat(document.getElementById('cc').value) || 0;
 
+      // Definir el rango dinámico para el eje X
+      let rangoMaxX = (umbral && umbral > 0) ? umbral * 1.5 : 1000;
+      if (rangoMaxX < 1000) {
+        rangoMaxX = 1000;
+      }
+
+      // Crear datos para el gráfico
       const labels = [];
       const costoProduccion = [];
       const costoCompra = [];
 
-      for (let i = 0; i <= 20; i++) {
-        const unidades = i * 500;
+      const paso = Math.ceil(rangoMaxX / 20);
+
+      for (let unidades = 0; unidades <= rangoMaxX; unidades += paso) {
         labels.push(unidades);
-
-        const cf = parseFloat(document.getElementById('cf').value) || 0;
-        const cv = parseFloat(document.getElementById('cv').value) || 0;
-        const ce = parseFloat(document.getElementById('ce').value) || 0;
-
         costoProduccion.push(cf + cv * unidades);
-        costoCompra.push(ce * unidades);
+        costoCompra.push(cc * unidades);
       }
+
+      const ctx = document.getElementById('grafico').getContext('2d');
 
       if (chart) {
         chart.destroy();
@@ -211,8 +218,14 @@
           },
           responsive: true,
           scales: {
-            x: { title: { display: true, text: 'Cantidad de unidades' } },
-            y: { title: { display: true, text: 'Unidades monetarias' } }
+            x: {
+              title: { display: true, text: 'Cantidad de unidades' },
+              min: 0,
+              max: rangoMaxX
+            },
+            y: {
+              title: { display: true, text: 'Unidades monetarias' }
+            }
           }
         }
       });
